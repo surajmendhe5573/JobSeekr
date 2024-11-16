@@ -25,7 +25,7 @@ exports.createProfile = async (req, res) => {
       logo,
     });
 
-    res.status(201).json(employer);
+    res.status(201).json({message: 'Profile created successfully', employer});
   } catch (error) {
     res.status(500).json({ message: 'Error creating profile', error });
   }
@@ -53,7 +53,7 @@ exports.updateProfile = async (req, res) => {
     employer.logo = logo || employer.logo;
     employer = await employer.save();
 
-    res.status(200).json(employer);
+    res.status(200).json({message: 'Profile updated successfully', employer});
   } catch (error) {
     res.status(500).json({ message: 'Error updating profile', error });
   }
@@ -72,7 +72,7 @@ exports.getProfile = async (req, res) => {
         return res.status(404).json({ message: 'Company profile not found' });
       }
   
-      res.status(200).json(employer);
+      res.status(200).json({message: 'Employers fetch successfully', employer});
     } catch (error) {
       res.status(500).json({ message: 'Error fetching profile', error });
     }
