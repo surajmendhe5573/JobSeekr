@@ -8,7 +8,6 @@ exports.registerUser = async (req, res) => {
   const { name, email, password, role } = req.body;
 
   try {
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ message: 'User already exists' });
@@ -29,7 +28,6 @@ exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if user exists
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(400).json({ message: 'Invalid credentials' });
@@ -51,5 +49,23 @@ exports.loginUser = async (req, res) => {
 
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
+  }
+};
+
+// Fetch All Users
+exports.getAllUsers = async (req, res) => {
+  try {
+    // Retrieve all users from the database
+    const users = await User.find({}, '-password'); // Exclude the password field for security
+
+    res.status(200).json({
+      message: 'Users fetched successfully',
+      users,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: 'Server error',
+      error,
+    });
   }
 };

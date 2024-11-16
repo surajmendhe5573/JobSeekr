@@ -18,9 +18,9 @@ app.get('/', (req, res) => {
     res.send('Jai Shree Ram');
 });
 
-app.use('/api/user', require('./routes/user'));
-app.use('/api/jobseeker', require('./routes/jobseeker'));
-app.use('/api/employer', require('./routes/employer'));
+app.use('/api/users', require('./routes/user'));
+app.use('/api/jobseekers', require('./routes/jobseeker'));
+app.use('/api/employers', require('./routes/employer'));
 
 // Start the server and log the port and environment being used
 app.listen(Port, () => {

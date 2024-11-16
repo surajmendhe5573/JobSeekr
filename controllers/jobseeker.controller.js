@@ -1,8 +1,14 @@
 const JobSeeker = require('../models/jobseeker.model');
 const Employer= require('../models/employer.model');
+const multer = require('multer');
+const path = require('path');
 
-// Create Job Seeker Profile
+// Create a Job Seeker Profile
 const createProfile = async (req, res) => {
+  if (req.user.role !== 'jobseeker') {
+    return res.status(403).json({ message: 'Access denied. Only jobseekers can create profiles.' });
+  }
+
   const { resume, skills, experience, education, jobPreferences } = req.body;
 
   try {
@@ -20,7 +26,7 @@ const createProfile = async (req, res) => {
       skills,
       experience,
       education,
-      jobPreferences
+      jobPreferences,
     });
 
     await newProfile.save();
@@ -30,8 +36,13 @@ const createProfile = async (req, res) => {
   }
 };
 
+
 // Update Job Seeker Profile
 const updateJobSeekerProfile = async (req, res) => {
+  if (req.user.role !== 'jobseeker') {
+    return res.status(403).json({ message: 'Access denied. Only jobseekers can update profiles.' });
+  }
+
   const { resume, skills, experience, education, jobPreferences } = req.body;
 
   try {
@@ -49,7 +60,7 @@ const updateJobSeekerProfile = async (req, res) => {
     jobSeeker.jobPreferences = jobPreferences || jobSeeker.jobPreferences;
 
     await jobSeeker.save();
-    res.status(200).json(jobSeeker);
+    res.status(200).json({message: 'Profile updated successfully', jobSeeker});
   } catch (error) {
     res.status(500).json({ message: 'Server error', error });
   }
@@ -59,9 +70,9 @@ const updateJobSeekerProfile = async (req, res) => {
 const searchJobs = async (req, res) => {
   try {
     // Check if the user has the jobseeker role
-    if (req.user.role !== 'jobseeker') {
-      return res.status(403).json({ message: 'Access denied. Only job seekers can search for jobs.' });
-    }
+    // if (req.user.role !== 'jobseeker') {
+    //   return res.status(403).json({ message: 'Access denied. Only job seekers can search for jobs.' });
+    // }
 
     const { location, requiredSkills, minSalary, maxSalary } = req.query;
 
@@ -90,18 +101,17 @@ const searchJobs = async (req, res) => {
     // Extract job postings from the matched employers
     const jobs = employers.flatMap(employer => employer.jobPostings);
 
-    // Check if any jobs match the search criteria
     if (jobs.length === 0) {
       return res.status(200).json({ message: "No jobs found matching the search criteria.", jobs: [] });
     }
 
-    // Return the matching job postings
     res.status(200).json({ jobs });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: 'Error searching jobs', error });
   }
 };
+
 
 module.exports = {createProfile, updateJobSeekerProfile, searchJobs};
 
