@@ -1,5 +1,6 @@
 const JobSeeker = require('../models/jobseeker.model');
 const Employer= require('../models/employer.model');
+const Application = require('../models/application.model');
 const multer = require('multer');
 const path = require('path');
 
@@ -113,5 +114,50 @@ const searchJobs = async (req, res) => {
 };
 
 
-module.exports = {createProfile, updateJobSeekerProfile, searchJobs};
+const applyForJob = async (req, res) => {
+  try {
+    // Check if the user is a jobseeker
+    if (req.user.role !== 'jobseeker') {
+      return res.status(403).json({ message: 'Access denied. Only job seekers can apply for jobs.' });
+    }
+
+    const { jobPostingId } = req.params; // Get jobPostingId from route parameters
+    const jobSeekerId = req.user.id; // Assume `protect` middleware adds `req.user`
+    const { resume, coverLetter } = req.body;
+
+    // Validate input
+    if (!jobPostingId || !resume) {
+      return res.status(400).json({ message: 'JobPostingId and Resume are required.' });
+    }
+
+    // Check if the job posting exists
+    const employer = await Employer.findOne({ 'jobPostings._id': jobPostingId });
+    if (!employer) {
+      return res.status(404).json({ message: 'Job posting not found.' });
+    }
+
+    // Check if the job seeker has already applied
+    const existingApplication = await Application.findOne({ jobSeeker: jobSeekerId, jobPosting: jobPostingId });
+    if (existingApplication) {
+      return res.status(400).json({ message: 'You have already applied for this job.' });
+    }
+
+    // Save the application
+    const application = new Application({
+      jobSeeker: jobSeekerId,
+      jobPosting: jobPostingId,
+      resume,
+      coverLetter,
+    });
+
+    await application.save();
+
+    res.status(201).json({ message: 'Application submitted successfully.', application });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error.', error });
+  }
+};
+
+module.exports = {createProfile, updateJobSeekerProfile, searchJobs, applyForJob};
 
