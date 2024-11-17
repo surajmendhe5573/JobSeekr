@@ -25,4 +25,7 @@ router.put('/update-job/:jobId', protect, employerController.updateJob);
 // Delete a Job Posting
 router.delete('/delete-job/:jobId', protect, employerController.deleteJob);
 
+router.get('/jobs/:jobId/applications', protect, employerController.viewApplications);
+
+
 module.exports = router;

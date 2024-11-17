@@ -1,4 +1,5 @@
 const Employer = require('../models/employer.model');
+const Application = require('../models/application.model');
 
 // Create Company Profile (only for employers)
 exports.createProfile = async (req, res) => {
@@ -190,3 +191,39 @@ exports.deleteJob = async (req, res) => {
     }
   };
   
+
+  // View Applications for a Specific Job Posting
+exports.viewApplications = async (req, res) => {
+  try {
+    // Check if the user has the employer role
+    if (req.user.role !== 'employer') {
+      return res.status(403).json({ message: 'Access denied. Only employers can view applications.' });
+    }
+
+    const { jobId } = req.params;
+
+    // Find the employer's profile
+    const employer = await Employer.findOne({ user: req.user.id });
+    if (!employer) {
+      return res.status(404).json({ message: 'Employer profile not found.' });
+    }
+
+    // Check if the job belongs to the employer
+    const job = employer.jobPostings.id(jobId);
+    if (!job) {
+      return res.status(404).json({ message: 'Job posting not found.' });
+    }
+
+    // Fetch all applications for the specific job posting
+    const applications = await Application.find({ jobPosting: jobId })
+      // .populate('jobSeeker', 'name email') // Include basic job seeker details
+      // .select('resume coverLetter appliedAt');
+
+    res.status(200).json({
+      message: 'Applications fetched successfully.',
+      applications,
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching applications.', error });
+  }
+};
