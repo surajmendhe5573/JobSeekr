@@ -227,3 +227,35 @@ exports.viewApplications = async (req, res) => {
     res.status(500).json({ message: 'Error fetching applications.', error });
   }
 };
+
+exports.updateApplicationStatus = async (req, res) => {
+  try {
+    if (req.user.role !== 'employer') {
+      return res.status(403).json({ message: 'Access denied. Only employers can update application statuses.' });
+    }
+
+    const { applicationId } = req.params; // Get the application ID from route parameters
+    const { status } = req.body; // Get the new status from the request body
+
+    // Validate status
+    const validStatuses = ['pending', 'interviewed', 'hired', 'rejected'];
+    if (!validStatuses.includes(status)) {
+      return res.status(400).json({ message: `Invalid status. Valid statuses are: ${validStatuses.join(', ')}` });
+    }
+
+    // Update the application status
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found.' });
+    }
+
+    application.status = status;
+    await application.save();
+
+    res.status(200).json({ message: 'Application status updated successfully.', application });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error.', error });
+  }
+};
+

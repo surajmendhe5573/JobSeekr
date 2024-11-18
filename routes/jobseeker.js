@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const { createProfile, updateJobSeekerProfile, searchJobs, applyForJob } = require('../controllers/jobseeker.controller');
+const { createProfile, updateJobSeekerProfile, searchJobs, applyForJob, viewApplicationStatus } = require('../controllers/jobseeker.controller');
 const { protect } = require('../middlewares/auth.middleware');
 
 const router = express.Router();
@@ -26,6 +26,8 @@ const storage = multer.diskStorage({
   
   // Apply for a job (with file upload)
   router.post('/apply/:jobPostingId', protect, upload.fields([{ name: 'resume' }, { name: 'coverLetter' }]), applyForJob);
+  router.get('/applications/status', protect, viewApplicationStatus);
+
   
 
 module.exports = router;

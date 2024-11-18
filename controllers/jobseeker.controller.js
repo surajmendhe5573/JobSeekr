@@ -159,5 +159,44 @@ const applyForJob = async (req, res) => {
   }
 };
 
-module.exports = {createProfile, updateJobSeekerProfile, searchJobs, applyForJob};
+const viewApplicationStatus = async (req, res) => {
+  try {
+    // Ensure the user is a jobseeker
+    if (req.user.role !== 'jobseeker') {
+      return res.status(403).json({ message: 'Access denied. Only job seekers can view application status.' });
+    }
+
+    const jobSeekerId = req.user.id;
+
+    // Fetch all applications for the job seeker
+    const applications = await Application.find({ jobSeeker: jobSeekerId })
+      .populate('jobSeeker', 'name'); // Populate job seeker details (optional)
+
+    if (applications.length === 0) {
+      return res.status(200).json({ message: 'No applications found.', applications: [] });
+    }
+
+    // Fetch job posting details manually
+    const jobsWithDetails = await Promise.all(
+      applications.map(async (application) => {
+        const employer = await Employer.findOne(
+          { 'jobPostings._id': application.jobPosting },
+          { 'jobPostings.$': 1 } // Only return the matching jobPosting
+        );
+
+        return {
+          ...application.toObject(),
+          jobPosting: employer ? employer.jobPostings[0] : null,
+        };
+      })
+    );
+
+    res.status(200).json({ applications: jobsWithDetails });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error.', error });
+  }
+};
+
+module.exports = { createProfile, updateJobSeekerProfile, searchJobs, applyForJob, viewApplicationStatus };
 

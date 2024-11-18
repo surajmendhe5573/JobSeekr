@@ -27,5 +27,7 @@ router.delete('/delete-job/:jobId', protect, employerController.deleteJob);
 
 router.get('/jobs/:jobId/applications', protect, employerController.viewApplications);
 
+router.patch('/applications/:applicationId/status', protect, employerController.updateApplicationStatus);
+
 
 module.exports = router;
