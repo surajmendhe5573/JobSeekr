@@ -159,44 +159,81 @@ const applyForJob = async (req, res) => {
   }
 };
 
+// const viewApplicationStatus = async (req, res) => {
+//   try {
+//     // Ensure the user is a jobseeker
+//     if (req.user.role !== 'jobseeker') {
+//       return res.status(403).json({ message: 'Access denied. Only job seekers can view application status.' });
+//     }
+
+//     const jobSeekerId = req.user.id;
+
+//     // Fetch all applications for the job seeker
+//     const applications = await Application.find({ jobSeeker: jobSeekerId })
+//       .populate('jobSeeker', 'name'); // Populate job seeker details (optional)
+
+//     if (applications.length === 0) {
+//       return res.status(200).json({ message: 'No applications found.', applications: [] });
+//     }
+
+//     // Fetch job posting details manually
+//     const jobsWithDetails = await Promise.all(
+//       applications.map(async (application) => {
+//         const employer = await Employer.findOne(
+//           { 'jobPostings._id': application.jobPosting },
+//           { 'jobPostings.$': 1 } // Only return the matching jobPosting
+//         );
+
+//         return {
+//           ...application.toObject(),
+//           jobPosting: employer ? employer.jobPostings[0] : null,
+//         };
+//       })
+//     );
+
+//     res.status(200).json({ applications: jobsWithDetails });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Server error.', error });
+//   }
+// };
+
+// View Application Status
 const viewApplicationStatus = async (req, res) => {
   try {
-    // Ensure the user is a jobseeker
+    // Check if the user is a jobseeker
     if (req.user.role !== 'jobseeker') {
       return res.status(403).json({ message: 'Access denied. Only job seekers can view application status.' });
     }
 
-    const jobSeekerId = req.user.id;
+    const { jobPostingId } = req.params; // Get jobPostingId from route parameters
+    const jobSeekerId = req.user.id; // Assume `protect` middleware adds `req.user`
 
-    // Fetch all applications for the job seeker
-    const applications = await Application.find({ jobSeeker: jobSeekerId })
-      .populate('jobSeeker', 'name'); // Populate job seeker details (optional)
-
-    if (applications.length === 0) {
-      return res.status(200).json({ message: 'No applications found.', applications: [] });
+    // Validate input
+    if (!jobPostingId) {
+      return res.status(400).json({ message: 'JobPostingId is required.' });
     }
 
-    // Fetch job posting details manually
-    const jobsWithDetails = await Promise.all(
-      applications.map(async (application) => {
-        const employer = await Employer.findOne(
-          { 'jobPostings._id': application.jobPosting },
-          { 'jobPostings.$': 1 } // Only return the matching jobPosting
-        );
+    // Find the application for this job posting and job seeker
+    const application = await Application.findOne({ jobSeeker: jobSeekerId, jobPosting: jobPostingId });
 
-        return {
-          ...application.toObject(),
-          jobPosting: employer ? employer.jobPostings[0] : null,
-        };
-      })
-    );
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found for this job posting.' });
+    }
 
-    res.status(200).json({ applications: jobsWithDetails });
+    // Return the application status and other details
+    res.status(200).json({
+      message: 'Application status retrieved successfully.',
+      status: application.status,  // Assuming 'status' field exists
+      application,
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error.', error });
   }
 };
+
+
 
 module.exports = { createProfile, updateJobSeekerProfile, searchJobs, applyForJob, viewApplicationStatus };
 

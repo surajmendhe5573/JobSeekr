@@ -29,5 +29,7 @@ router.get('/jobs/:jobId/applications', protect, employerController.viewApplicat
 
 router.patch('/applications/:applicationId/status', protect, employerController.updateApplicationStatus);
 
+router.post('/applications/:applicationId/schedule-interview', protect, employerController.scheduleInterview);
+router.post('/schedule-interview', employerController.scheduleInterview);
 
 module.exports = router;

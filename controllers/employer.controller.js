@@ -1,5 +1,7 @@
 const Employer = require('../models/employer.model');
 const Application = require('../models/application.model');
+const nodemailer = require('nodemailer');
+const config= require('../config/keys');
 
 // Create Company Profile (only for employers)
 exports.createProfile = async (req, res) => {
@@ -256,6 +258,136 @@ exports.updateApplicationStatus = async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Server error.', error });
+  }
+};
+
+// exports.scheduleInterview = async (req, res) => {
+//   try {
+//     if (req.user.role !== 'employer') {
+//       return res.status(403).json({ message: 'Access denied. Only employers can schedule interviews.' });
+//     }
+
+//     const { applicationId } = req.params;
+//     const { date, time, mode, location, link } = req.body;
+
+//     // Validate mode
+//     if (!['online', 'in-person'].includes(mode.toLowerCase())) {
+//       return res.status(400).json({ message: 'Invalid interview mode. Use "online" or "in-person".' });
+//     }
+
+//     // Find application
+//     const application = await Application.findById(applicationId).populate('jobSeeker', 'email name');
+//     if (!application) {
+//       return res.status(404).json({ message: 'Application not found.' });
+//     }
+
+//     // Check if jobSeeker is populated
+//     if (!application.jobSeeker) {
+//       return res.status(400).json({ message: 'Job seeker details are missing in the application.' });
+//     }
+
+//     // Update interview details
+//     application.interview = {
+//       scheduled: true,
+//       date,
+//       time,
+//       mode: mode.toLowerCase(),
+//       location: mode.toLowerCase() === 'in-person' ? location : null,
+//       link: mode.toLowerCase() === 'online' ? link : null,
+//     };
+//     await application.save();
+
+//     // Send email notification
+//     const transporter = nodemailer.createTransport({
+//       service: 'gmail',
+//       auth: {
+//         user: config.emailCredentials.EMAIL_USER,
+//         pass: config.emailCredentials.EMAIL_PASS,
+//       },
+//     });
+
+//     const mailOptions = {
+//       from: config.emailCredentials.EMAIL_USER,
+//       to: application.jobSeeker.email,
+//       subject: 'Interview Scheduled',
+//       text: `Dear ${application.jobSeeker.name},\n\nYour interview for the job has been scheduled.\n\nDetails:\n- Date: ${date}\n- Time: ${time}\n- Mode: ${mode}\n- Location: ${location || 'N/A'}\n- Link: ${link || 'N/A'}\n\nBest regards,\nYour Company`,
+//     };
+
+//     await transporter.sendMail(mailOptions);
+
+//     res.status(200).json({ message: 'Interview scheduled successfully and notification sent.', application });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Error scheduling interview.', error });
+//   }
+// };
+
+
+exports.scheduleInterview = async (req, res) => {
+  try {
+   // Ensure the employer is logged in
+    // if (!req.user || !req.user.companyName) {
+    //   return res.status(400).json({ message: 'Employer information missing or user not authenticated.' });
+    // }
+
+    const { applicationId, date, time, mode, location, link } = req.body;
+
+    // Validate required fields
+    if (!applicationId || !date || !time || !mode) {
+      return res.status(400).json({ message: 'All fields are required: applicationId, date, time, mode.' });
+    }
+
+    // Find the application by its ID
+    const application = await Application.findById(applicationId);
+    if (!application) {
+      return res.status(404).json({ message: 'Application not found.' });
+    }
+
+    // Check if the interview is already scheduled
+    if (application.interview.scheduled) {
+      return res.status(400).json({ message: 'Interview is already scheduled for this application.' });
+    }
+
+    // Update the application with the interview details
+    application.interview.scheduled = true;
+    application.interview.date = date;
+    application.interview.time = time;
+    application.interview.mode = mode;
+    application.interview.location = location;
+    application.interview.link = link;
+
+    // Save the updated application
+    await application.save();
+
+    // Send email notification to the job seeker (applicant)
+    const jobSeeker = application.jobSeeker; // Assuming jobSeeker has an email field
+    const employer = req.user; // Employer's info
+
+    // Set up the email transport
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: config.emailCredentials.EMAIL_USER, // Sender's email (from config)
+        pass: config.emailCredentials.EMAIL_PASS, // Sender's email password (from config)
+      },
+    });
+
+    // Define the email content
+    const mailOptions = {
+      from: config.emailCredentials.EMAIL_USER, // Sender's email
+      to: jobSeeker.email, // Recipient's email (job seeker)
+      subject: 'Interview Scheduled - ' + employer.companyName,
+      text: `Dear ${jobSeeker.name},\n\nYou have been selected for an interview for the position at ${employer.companyName}.\n\nInterview Details:\nDate: ${date}\nTime: ${time}\nMode: ${mode}\nLocation: ${location || 'To be discussed'}\nLink: ${link || 'N/A'}\n\nBest regards,\n${employer.companyName}`,
+    };
+
+    // Send the email
+    await transporter.sendMail(mailOptions);
+
+    // Respond with success
+    res.status(200).json({ message: 'Interview scheduled successfully and notification sent to the applicant.', application });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Error scheduling interview', error });
   }
 };
 

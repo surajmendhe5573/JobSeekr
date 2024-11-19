@@ -27,6 +27,7 @@ const storage = multer.diskStorage({
   // Apply for a job (with file upload)
   router.post('/apply/:jobPostingId', protect, upload.fields([{ name: 'resume' }, { name: 'coverLetter' }]), applyForJob);
   router.get('/applications/status', protect, viewApplicationStatus);
+  router.get('/applications/:jobPostingId/status', protect, viewApplicationStatus);
 
   
 
